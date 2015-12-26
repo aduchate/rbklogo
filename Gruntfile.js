@@ -295,6 +295,7 @@ module.exports = function (grunt) {
       }
     },
 
+    //uglify: { options: { mangle: false, beautify: true } },
     // By default, your `index.html`'s <!-- Usemin block --> will take care of
     // minification. These next options are pre-configured if you do not wish
     // to use the Usemin blocks.
@@ -366,8 +367,8 @@ module.exports = function (grunt) {
       dist: [
         'sass',
         'copy:styles',
-        'imagemin'
-        //'svgmin'
+        'imagemin',
+        'svgmin'
       ]
     }
   });

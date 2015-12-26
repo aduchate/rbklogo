@@ -3,7 +3,6 @@
 /* globals LogoParser: false */
 /* globals PouchDB: false */
 
-var logoCode = CodeMirror(document.querySelectorAll('.code #placeholder')[0], { mode:'logo', lineNumbers: true, gutters: ['CodeMirror-linenumbers', 'breakpoints']}); // jshint ignore:line
 function makeMarker() {
   var marker = document.createElement('div');
   marker.style.color = '#822';
@@ -11,6 +10,8 @@ function makeMarker() {
   marker.innerHTML = '●';
   return marker;
 }
+
+var logoCode = CodeMirror(document.querySelectorAll('.code #placeholder')[0], { mode:'logo', lineNumbers: true, gutters: ['CodeMirror-linenumbers', 'breakpoints']}); // jshint ignore:line
 
 logoCode.on('gutterClick', function(cm, n) {
   var info = cm.lineInfo(n);
@@ -179,4 +180,3 @@ logo.turtle.show();
 storage.save('Ex-Spirale','to spiral :length\r  if :length > 10 [\r\tav :length\r\tgauche 90\r\tspiral :length - 5\r  ]\rend\r\rspiral 100', false);
 storage.save('Ex-Arbre','to arbre :length\r  ifelse :length > 10 [\r\tgauche 40\r\tavance :length\r    arbre :length - 25\r    recule :length\r\tdroite 30\r\tavance :length\r    arbre :length - 15\r    recule :length\r    droite 60\r    avance :length\r    arbre :length - 15\r    recule :length\r    gauche 50\r  ] [\r    ga 30 av 5 dr 60 av 5 ga 60 re 5 dr 60 re 5 ga 30\r  ]\rend\r\rpu cs maison \rdr 45 re 80 ga 45\rpd\rrecule 200\ravance 200\rarbre 90\rgauche 20 arbre 85\rdroite 60 arbre 65', false);
 storage.save('Ex-Carres','repete 36 [\n\trepete 4 [\n\t\tavance 100\n\t\tgauche 90\n\t]\n\tgauche 10\n]',false);
-
