@@ -11,6 +11,8 @@
         <!-- bower:css -->
         <link rel="stylesheet" href="../bower_components/font-awesome/css/font-awesome.css" />
         <link rel="stylesheet" href="../bower_components/codemirror/lib/codemirror.css" />
+        <link rel="stylesheet" href="../bower_components/uikit/css/uikit.almost-flat.css" />
+        <link rel="stylesheet" href="../bower_components/uikit/css/components/autocomplete.css">
         <!-- endbower -->
         <!-- endbuild -->
         <!-- build:css(.tmp) styles/main.css -->
@@ -30,9 +32,10 @@
               <canvas id="canvas" width="600" height="600"></canvas>
             </div>
             <div class="console">
-              <div class='buttons'>
-                <a href="#" class="button play" onclick="logo.play()"></a>
-                <a href="#" class="button stop" onclick="logo.stop()"></a>
+              <div class='uk-button-group'>
+                <a href="#" class="uk-button" onclick="logo.play()"><i class="fa fa-play"></i></a>
+                <a href="#" class="uk-button" onclick="logo.stop()"><i class="fa fa-stop"></i></a>
+                <a href="#" class="uk-button" onclick="logo.turtle.home(), logo.clear()"><i class="fa fa-recycle"></i></a>
               </div>
               <div id="consoleText"></div>
             </div>
@@ -40,10 +43,12 @@
 
           <div class="code">
             <div id="storage">
-              <input type="text" placeholder="Program name">
-              <div class='buttons'>
-                <a href="#" class="button load" onclick="loadLogo()"></a>
-               <a href="#" class="button save" onclick="saveLogo()"></a>
+              <div class="uk-autocomplete uk-form">
+                <input class="uk-width-1-1" type="text" placeholder="Program name">
+              </div>
+              <div class='uk-button-group'>
+                <a href="#" class="uk-button" onclick="loadLogo()"><i class="fa fa-cloud-download"></i></a>
+                <a href="#" class="uk-button" onclick="saveLogo()"><i class="fa fa-save"></i></a>
               </div>
             </div>
             <div id="placeholder"></div>
@@ -55,6 +60,8 @@
         <script src="../bower_components/jquery/dist/jquery.js"></script>
         <script src="../bower_components/codemirror/lib/codemirror.js"></script>
         <script src="../bower_components/pouchdb/dist/pouchdb.js"></script>
+        <script src="../bower_components/uikit/js/uikit.js"></script>
+        <script src="../bower_components/uikit/js/components/autocomplete.js"></script>
         <!-- endbower -->
         <!-- endbuild -->
 
