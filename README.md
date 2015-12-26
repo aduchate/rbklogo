@@ -7,3 +7,5 @@ The implementation is very concise 500 lines of js and peg code combined.
 The grammar is not yet complete but covers the basis of the language.
 
 Three examples are provided: ex-arbre, ex-spirale and ex-carres.
+
+Live demo: https://rawgit.com/aduchate/rbklogo/master/dist/index.html
