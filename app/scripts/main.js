@@ -3,8 +3,7 @@
 /* globals LogoParser: false */
 /* globals PouchDB: false */
 
-var logoCode = CodeMirror(document.querySelectorAll('.code #placeholder')[0], { lineNumbers: true, gutters: ['CodeMirror-linenumbers', 'breakpoints']}); // jshint ignore:line
-
+var logoCode = CodeMirror(document.querySelectorAll('.code #placeholder')[0], { mode:'logo', lineNumbers: true, gutters: ['CodeMirror-linenumbers', 'breakpoints']}); // jshint ignore:line
 function makeMarker() {
   var marker = document.createElement('div');
   marker.style.color = '#822';

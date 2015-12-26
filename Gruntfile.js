@@ -336,6 +336,12 @@ module.exports = function (grunt) {
             '{,*/}*.html',
             'styles/fonts/{,*/}*.*'
           ]
+        },{
+          expand: true,
+          dot: true,
+          cwd: 'bower_components/font-awesome', // change this for font-awesome
+          src: ['fonts/*.*'],
+          dest: '<%= config.dist %>'
         }]
       },
       styles: {
@@ -360,8 +366,8 @@ module.exports = function (grunt) {
       dist: [
         'sass',
         'copy:styles',
-        'imagemin',
-        'svgmin'
+        'imagemin'
+        //'svgmin'
       ]
     }
   });
