@@ -1,0 +1,278 @@
+start =     prog
+
+prog =      _ head:line tail:(_ EOL _ line?)* {
+                return function() { var global = {}; var local = {}; head(global,local); tail.forEach(function (f) { if (f[3]) { f[3](global,local); } }); };
+            }
+
+line =      procDecl
+            /_ head:cmd tail:(__ cmd)* _ comment? {
+                return function(global,local) { head(global,local); tail.forEach(function (f) { f[1](global,local); }); };
+            }
+            / comment {
+                return function() {};
+            }
+            / print _ comment?  {
+                return function() {};
+            }
+            / '' {
+                return function() {};
+            }
+
+cmd =       repeat  / fd / bk / rt / lt / cs / pu / pd / ht / st / ifelse /ife / stop / fore / pc / cc
+            / pause / ds / fontsize / fontstyle / fontname / print / home / setxy / make / localmake / procInvoke
+
+procInvoke= _ name:name __ params:expression* _ {
+                return function(global, local) {
+                    var newLocal = {}; //Should we add local to newLocal ?
+                    var proc = global[name()];
+
+                    if (proc) {
+                        var i=0;
+                        proc.params.forEach(function (p) {
+                            newLocal[p] = params[i++](global, local);
+                        });
+
+                        return proc.body(global, newLocal);
+                    }
+                }
+            }
+
+procDecl =  _ 'to' __ name:name __ params:parameterDeclarations? _ EOL? lines:(line? EOL)+ _ 'end' _ {
+                return function(global) { global[name()] = { params: params.map(function(p) {return p();}), body: function(global, local) { lines.forEach(function (f) { f[0](global,local); }); }}; };
+            }
+
+parameterDeclarations = ':' head:name _ tail:(',' _ parameterDeclarations)* {
+                var params = [head];
+                tail.forEach(function(p) { params.push(p); });
+
+                return params;
+            }
+
+func =      random / repcount / getangle / getx / gety
+
+repeat =    ('repeat' / 'repete') __ ex:expression __ blk:block {
+                 return function(global, local) {for (var i=0; i<ex(global, local); i++) { blk(global, local, { '$repCount':i }); } };
+             }
+
+
+block =     '[' _ EOL* cmds:(_ cmd _ EOL*)+ _ ']' {
+                return function(global, local, extra) {
+                    var newLocal = {}
+                    Object.keys(local).forEach(function(k) { newLocal[k] = local[k]; });
+                    if (extra) { Object.keys(extra).forEach(function(k) { newLocal[k] = extra[k]; }); }
+
+                    cmds.forEach(function(f) {
+                        f[1](global, newLocal);
+                    });
+                };
+            }
+
+ife =       'if' __ cmp:comparison _ blk:block {
+                return function(global, local) {
+                    if (cmp(global, local)) { blk(global, local); }
+                }
+            }
+
+ifelse =       'ifelse' __ cmp:comparison _ blk:block _ blkelse:block {
+                return function(global, local) {
+                    if (cmp(global, local)) { blk(global, local); } else { blkelse(global, local); }
+                }
+            }
+
+comparison= ex1:expression _ op:comparisonOperator _ ex2:expression {
+                return function(global, local) {
+                    return  op === '<' ? ex1(global, local) < ex2(global, local) :
+                            op === '>' ? ex1(global, local) > ex2(global, local) :
+                            op === '=' ? ex1(global, local) == ex2(global, local) :
+                            op === '<=' ? ex1(global, local) <= ex2(global, local) :
+                            op === '>=' ? ex1(global, local) >= ex2(global, local) :
+                            op === '==' ? ex1(global, local) == ex2(global, local) :
+                            op === '!=' ? ex1(global, local) != ex2(global, local) :
+                            op === '<>' ? ex1(global, local) != ex2(global, local) : false;
+                }
+            }
+
+comparisonOperator = '<=' / '>=' / '==' / '!=' / '<>' / '<' / '>' / '='
+
+make =          'make' __ STRINGLITERAL __ value
+
+localmake =     'localmake' __ STRINGLITERAL __ value
+
+print =         'print' __ (value / quotedstring)
+
+quotedstring =  '[' _ STRINGLITERAL? (__ STRINGLITERAL)* _ ']'
+
+name =          STRING
+
+value =         STRINGLITERAL / expression / deref
+
+parenExpression='(' _ ex:expression _ ')' { return ex; }
+
+signExpression= op:('+'/'-')? _ atomic:(number / deref / func / parenExpression) {
+                    return op && op == '-' ? function(global, local) { return -atomic(global, local); } : atomic;
+                }
+
+powerExpression =
+                head:signExpression tail:(_ '^' powerExpression )? {
+                    return tail ? function(global, local) { return Math.pow(head(global, local),tail[2](global, local)); } : head;
+                }
+
+multiplyingExpression =
+                head:powerExpression tail:(_ ('*' / '/' / '%') _ multiplyingExpression)?  {
+                    if (tail) {
+                        var l = head;
+                        var op = tail[1];
+                        var r = tail[3];
+
+                        return function(global, local) { return op == '*' ? l(global, local) * r(global, local) : op == '/' ? l(global, local) / r(global, local) : l(global, local) % r(global, local); }
+                    } else {
+                        return head;
+                    }
+                }
+
+expression =    head:multiplyingExpression tail:(_ ('-'/'+') _ expression)? {
+                    if (tail) {
+                        var l = head;
+                        var op = tail[1];
+                        var r = tail[3];
+
+                        return function(global, local) { return op == '-' ? l(global, local) - r(global, local) : l(global, local) + r(global, local); }
+                    } else {
+                        return head;
+                    }
+                }
+
+deref =         ':' name:name {
+                    return function(global, local) { return local[name()] ? local[name()]:global[name()]; };
+                }
+
+fd  =           ('fd' / 'forward' / 'avance' / 'av' ) ![a-zA-Z0-9_] __ val:expression {
+                    return function(global, local) {logo.turtle.fw(val(global, local));};
+                  }
+
+bk  =           ('bk' / 'backward' / 'back' / 'recule' / 're' ) ![a-zA-Z0-9_] __ val:expression {
+                    return function(global, local) {logo.turtle.fw(-val(global, local));};
+                  }
+
+rt  =           ('rt' / 'right' / 'droite'/ 'dr') ![a-zA-Z0-9_] __ val:expression {
+                    return function(global, local) {logo.turtle.lt(-val(global, local));};
+                }
+
+lt  =           ('lt' / 'left' / 'gauche' / 'ga' ) ![a-zA-Z0-9_] __ val:expression {
+                    return function(global, local) {logo.turtle.lt(val(global, local));};
+                }
+
+cs  =           ('cs' / 'clearscreen' / 'cls' / 'clear' / 've' / 'videecran') ![a-zA-Z0-9_] {
+                    return function() {logo.clear();};
+                }
+
+pu  =           ('pu' / 'penup' / 'levecrayon' / 'lc') ![a-zA-Z0-9_] {
+                    return function() {logo.turtle.pen = false;};
+                }
+
+pd  =           ('pd' / 'pendown'/ 'baissecrayon' / 'bc') ![a-zA-Z0-9_] {
+                    return function() {logo.turtle.pen = true;};
+                }
+
+ht  =           ('ht' / 'hideturtle' / 'ct' / 'cachetortue') ![a-zA-Z0-9_] {
+                    return function() {logo.turtle.hide();};
+                }
+
+st  =           ('st' / 'showturtle' / 'mt' / 'montretortue') ![a-zA-Z0-9_] {
+                    return function() {logo.turtle.show();};
+                }
+
+home =          ('home' / 'maison' / 'centre') ![a-zA-Z0-9_] {
+                    return function() {logo.turtle.home();};
+                }
+
+stop =          'stop' ![a-zA-Z0-9_]
+
+setxy =         ('setxy' / 'vaxy') __ x:expression __ y:expression  ![a-zA-Z0-9_] {
+                    return function(global, local) {logo.turtle.set(x(global, local),y(global, local));};
+                }
+
+random =        'random' __ expression
+
+getangle =      'getangle' ![a-zA-Z0-9_] {
+                    return function() { return logo.turtle.direction;};
+                }
+
+getx =          'getx'  ![a-zA-Z0-9_] {
+                    return function() { return logo.turtle.x;};
+                }
+
+gety =          'gety'  ![a-zA-Z0-9_] {
+                    return function() {return logo.turtle.y; };
+                }
+
+/**--This value will tell you which repeat value you are on inside the innermost repeat loop.--**/
+/**--This value starts at 1.--**/
+/**--If you are not in a repeat loop, it will evaluate to 0.--**/
+repcount =      'repcount' {
+                    return function(global, local) { return local['$repCount'] ? local['$repCount'] : 0; };
+                }
+
+/* --modified to make the step optional-- */
+fore=           ('for' / 'boucle') _ '[' _ name __ expression __ expression (__ expression)? _ ']' _ block
+
+pc  =           ('pc' / 'pencolor' / 'cc' / 'couleurcrayon' ) __ color:(name / expression expression expression expression? / hexcolor) {
+                    return function(global, local) { return local['$repCount'] ? local['$repCount'] : 0; };
+                }
+
+/* --change canvas color-- */
+cc  =           ('cc' / 'canvascolor') __ color:(name / expression expression expression / hexcolor)
+
+hexcolor =      '#'HEX
+
+HEX =           [0-9a-fA-F][0-9a-fA-F][0-9a-fA-F][0-9a-fA-F][0-9a-fA-F][0-9a-fA-F]
+
+pause =         'pause' __ expression
+
+/* --draw a string to the canvas-- */
+ds  =           ('ds'/'drawstring'/'label'/'tracetexte'/'tt') __ value
+
+fontname =      'fontname' __ name
+
+fontsize
+    = 'fontsize' __ expression
+
+fontstyle
+    = 'fontstyle' __ style
+
+style
+    = 'bold' / 'plain' / 'italic'
+
+number
+    = NUMBER
+
+comment
+    = COMMENT
+
+STRINGLITERAL = '"' lit:STRING {
+                    return lit;
+                }
+
+STRING =        head:[a-zA-Z] tail:[a-zA-Z0-9_]* {
+                    return function() {
+                        return head + tail.join('');
+                    }
+                }
+
+NUMBER =        intpart:([0-9]+) fracpart:('.' [0-9]+)? {
+                    if (fracpart) { fracpart.splice(0,1); }
+                    var val = parseInt(intpart.join(""))+(fracpart?(1.0*parseInt(fracpart.join(""))/Math.pow(10,fracpart.length)):0);
+                    return function() { return val; }
+                }
+
+COMMENT
+    = '' ![\r\n]*
+
+EOL "end of line"
+   = [\r\n]+
+
+// optional whitespace
+_  = [ \t]*
+
+// mandatory whitespace
+__ = [ \t]+

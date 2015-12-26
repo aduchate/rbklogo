@@ -1,0 +1,11 @@
+{
+  "name": "rbk",
+  "private": true,
+  "dependencies": {
+    "codemirror": "CodeMirror#~5.10.0",
+    "font-awesome": "fontawesome#~4.5.0",
+    "jquery": "~1.11.0",
+    "pouchdb": "~5.1.0"
+  },
+  "devDependencies": {}
+}
