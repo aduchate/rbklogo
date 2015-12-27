@@ -32,9 +32,21 @@
             </div>
             <div class="console">
               <div class='uk-button-group'>
-                <a href="#" class="uk-button" onclick="logo.play()"><i class="fa fa-play"></i></a>
+                <a id="play" href="#" class="uk-button" onclick="logo.play()"><i class="fa fa-play"></i></a>
                 <a href="#" class="uk-button" onclick="logo.stop()"><i class="fa fa-stop"></i></a>
                 <a href="#" class="uk-button" onclick="logo.turtle.home(), logo.clear()"><i class="fa fa-recycle"></i></a>
+              </div>
+
+              <div class="uk-button-group">
+                <a href="#" class="uk-button uk-active"><i class="fa fa-clock-o"></i></a>
+                <div class="uk-button-group" data-uk-button-radio>
+                  <a href="#" class="uk-button" onclick="logo.setDelay(1500)">1</i></a>
+                  <a href="#" class="uk-button" onclick="logo.setDelay(500)">2</i></a>
+                  <a href="#" class="uk-button" onclick="logo.setDelay(150)">3</i></a>
+                  <a href="#" class="uk-button uk-active" onclick="logo.setDelay(50)">4</i></a>
+                  <a href="#" class="uk-button" onclick="logo.setDelay(0)">5</i></a>
+                  <a href="#" class="uk-button" onclick="logo.setDelay(-1)"><i class="fa fa-rocket"></i></i></a>
+                </div>
               </div>
               <div id="consoleText"></div>
             </div>
@@ -45,9 +57,20 @@
               <div class="uk-autocomplete uk-form">
                 <input class="uk-width-1-1" type="text" placeholder="Program name">
               </div>
-              <div class='uk-button-group'>
+              <div class="uk-button-group">
                 <a href="#" class="uk-button" onclick="loadLogo()"><i class="fa fa-cloud-download"></i></a>
+                <div data-uk-dropdown>
+                  <a class="uk-button"><i class="fa fa-chevron-down"></i></a>
+                  <div class="uk-dropdown uk-dropdown-small">
+                    <ul id="logoList" class="uk-nav uk-nav-dropdown">
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
+              <div class="uk-button-group tools">
                 <a href="#" class="uk-button" onclick="saveLogo()"><i class="fa fa-save"></i></a>
+                <a href="#" class="uk-button" onclick="delLogo()"><i class="fa fa-trash"></i></a>
               </div>
             </div>
             <div id="placeholder"></div>

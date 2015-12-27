@@ -1,25 +1,88 @@
-start =     prog
+{
+  function async(sync, loc, local, global, extra) {
+    var deferred = $.Deferred();
+    if (logo.delay>=0) {
+        setTimeout(function() {
+            logoCode.setSelection({'line':loc.start.line-1,'ch':loc.start.column-1},{'line':loc.end.line-1,'ch':loc.end.column-1});
+            if (logo.breakPoints[loc.start.line]) {
+                logo.pause();
+            }
+            var fn = function () {
+                if (logo.aborted) {
+                    deferred.fail("Interrupted");
+                    return;
+                }
+                if (logo.paused) { setTimeout(fn, 100); } else {
+                    try {
+                        deferred.resolve(sync(local, global, extra));
+                    } catch (e) {
+                        deferred.fail(e);
+                    }
+                }
+            }
+            fn();
+        }, logo.delay);
+    } else {
+        deferred.resolve(sync(local, global, extra));
+    }
+    return deferred.promise();
+  }
+}
+
+start =     prog /* Returns the promise from lines */
 
 prog =      _ head:line tail:(_ EOL _ line?)* {
-                return function() { var global = {}; var local = {}; head(global,local); tail.forEach(function (f) { if (f[3]) { f[3](global,local); } }); };
+                return function() {
+                    var global = {};
+                    var local = {};
+                    //Lines already return promises
+                    var p = head(global,local);
+
+                    tail.forEach(function(f) {
+                        if (f[3]) {
+                            p = p.then(function() { return f[3](global,local); });
+                        }
+                    });
+                    return p;
+                };
             }
 
-line =      procDecl
-            /_ head:cmd tail:(__ cmd)* _ comment? {
-                return function(global,local) { head(global,local); tail.forEach(function (f) { f[1](global,local); }); };
+line =      p:procDecl {
+                return function(global,local) { p(global, local); return $.Deferred().resolveWith(this); }
+            }
+            /_ head:exec tail:(__ exec)* _ comment? {
+                return function(global,local) {
+                    var p = head(global,local);
+
+                    tail.forEach(function(f) {
+                        p = p.then(function() { return f[1](global,local); });
+                    });
+
+                    return p;
+                };
             }
             / comment {
-                return function() {};
+                return function() { return $.Deferred().resolveWith(this); }
             }
             / print _ comment?  {
-                return function() {};
+                return function() { return $.Deferred().resolveWith(this); }
             }
             / '' {
-                return function() {};
+                return function() { return $.Deferred().resolveWith(this); }
             }
 
-cmd =       repeat  / fd / bk / rt / lt / cs / pu / pd / ht / st / ifelse /ife / stop / fore / pc / cc
-            / pause / ds / fontsize / fontstyle / fontname / print / home / setxy / make / localmake / procInvoke
+exec =      repeat  /* pass the promise along */
+            / cmd:cmd {
+                var loc = location();
+                return function(global,local,location) {
+                    return async(cmd, loc, global, local);
+                }
+            }
+            / ifelse / ife / fore
+            / procInvoke  /* pass the promise along */
+
+cmd =       fd / bk / rt / lt / cs / pu / pd / ht / st / stop / pc / cc
+            / pause / ds / fontsize / fontstyle / fontname / print / home / setxy / make / localmake
 
 procInvoke= _ name:name __ params:expression* _ {
                 return function(global, local) {
@@ -37,8 +100,18 @@ procInvoke= _ name:name __ params:expression* _ {
                 }
             }
 
-procDecl =  _ 'to' __ name:name __ params:parameterDeclarations? _ EOL? lines:(line? EOL)+ _ 'end' _ {
-                return function(global) { global[name()] = { params: params.map(function(p) {return p();}), body: function(global, local) { lines.forEach(function (f) { f[0](global,local); }); }}; };
+procDecl =  _ 'to' __ name:name __ params:(parameterDeclarations _)? EOL? lines:(line? EOL)+ _ 'end' _ {
+                return function(global) {
+                    global[name()] = { params: params[0].map(function(p) {return p();}), body: function(global, local) {
+                        var p = $.Deferred().resolveWith(this);
+
+                        lines.forEach(function(f) {
+                            p = p.then(function() { return f[0](global,local); });
+                        });
+
+                        return p;
+                    }};
+                };
             }
 
 parameterDeclarations = ':' head:name _ tail:(',' _ parameterDeclarations)* {
@@ -51,31 +124,45 @@ parameterDeclarations = ':' head:name _ tail:(',' _ parameterDeclarations)* {
 func =      random / repcount / getangle / getx / gety
 
 repeat =    ('repeat' / 'repete') __ ex:expression __ blk:block {
-                 return function(global, local) {for (var i=0; i<ex(global, local); i++) { blk(global, local, { '$repCount':i }); } };
+                 return function(global, local) {
+                    var p = $.Deferred().resolveWith(this);
+                    for (var i=0; i<ex(global, local); i++) {
+                        //Explicitely capture i
+                        (function(i) {
+                            p = p.then(function() { return blk(global, local, { '$repCount':i }); });
+                        }(i));
+                    }
+
+                    return p;
+                 };
              }
 
-
-block =     '[' _ EOL* cmds:(_ cmd _ EOL*)+ _ ']' {
+block =     '[' _ EOL* cmds:(_ exec _ EOL*)+ _ ']' {
                 return function(global, local, extra) {
                     var newLocal = {}
                     Object.keys(local).forEach(function(k) { newLocal[k] = local[k]; });
                     if (extra) { Object.keys(extra).forEach(function(k) { newLocal[k] = extra[k]; }); }
 
+                    var p = $.Deferred().resolveWith(this);
+
                     cmds.forEach(function(f) {
-                        f[1](global, newLocal);
+                        p = p.then(function() { return f[1](global, newLocal); });
                     });
+
+                    return p;
                 };
             }
 
 ife =       'if' __ cmp:comparison _ blk:block {
                 return function(global, local) {
-                    if (cmp(global, local)) { blk(global, local); }
+                    if (cmp(global, local)) { return blk(global, local); }
+                    return $.Deferred().resolveWith(this);
                 }
             }
 
 ifelse =       'ifelse' __ cmp:comparison _ blk:block _ blkelse:block {
                 return function(global, local) {
-                    if (cmp(global, local)) { blk(global, local); } else { blkelse(global, local); }
+                    if (cmp(global, local)) { return blk(global, local); } else { return blkelse(global, local); }
                 }
             }
 
