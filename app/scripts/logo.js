@@ -179,8 +179,8 @@ LogoParser = (function() {
                             var p = $.Deferred().resolveWith(this);
                             for (var i=0; i<ex(global, local); i++) {
                                 //Explicitely capture i
-                                (function(i) {
-                                    p = p.then(function() { return blk(global, local, { '$repCount':i }); });
+                                (function(count) {
+                                    p = p.then(function() { return blk(global, local, { '$repCount':count }); });
                                 }(i));
                             }
 
@@ -5718,9 +5718,11 @@ LogoParser = (function() {
     }
 
 
+      var globalSteps = 0;
+
       function async(sync, loc, local, global, extra) {
         var deferred = $.Deferred();
-        if (logo.delay>=0) {
+        if (logo.delay>=0 || globalSteps>100) {
             setTimeout(function() {
                 logoCode.setSelection({'line':loc.start.line-1,'ch':loc.start.column-1},{'line':loc.end.line-1,'ch':loc.end.column-1});
                 if (logo.breakPoints[loc.start.line]) {
@@ -5734,6 +5736,7 @@ LogoParser = (function() {
                     if (logo.paused) { setTimeout(fn, 100); } else {
                         try {
                             deferred.resolve(sync(local, global, extra));
+                            globalSteps = 0;
                         } catch (e) {
                             deferred.fail(e);
                         }
@@ -5743,6 +5746,7 @@ LogoParser = (function() {
             }, logo.delay);
         } else {
             deferred.resolve(sync(local, global, extra));
+            globalSteps++;
         }
         return deferred.promise();
       }

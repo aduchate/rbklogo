@@ -21,7 +21,7 @@ logoCode.on('gutterClick', function(cm, n) {
   var info = cm.lineInfo(n);
 
   if (info.gutterMarkers) {
-    delete logo.breakPoints[info.line];
+    delete logo.breakPoints[info.line+1];
   } else {
     logo.breakPoints[info.line+1] = 1;
   }
@@ -159,7 +159,7 @@ var storage = {
 
   save: function(name,data,overwrite) {
     var that = this;
-    that.load(name).then(function (doc) {
+    return that.load(name).then(function (doc) {
       if (overwrite) {
         doc.data = data;
         return that.db().put(doc);
@@ -187,9 +187,6 @@ var storage = {
   }
 };
 
-storage.save('Ex-Spirale','to spiral :length\r  if :length > 10 [\r\tav :length\r\tgauche 90\r\tspiral :length - 5\r  ]\rend\r\rspiral 100', false);
-storage.save('Ex-Arbre','to arbre :length\r  ifelse :length > 10 [\r\tgauche 40\r\tavance :length\r    arbre :length - 25\r    recule :length\r\tdroite 30\r\tavance :length\r    arbre :length - 15\r    recule :length\r    droite 60\r    avance :length\r    arbre :length - 15\r    recule :length\r    gauche 50\r  ] [\r    ga 30 av 5 dr 60 av 5 ga 60 re 5 dr 60 re 5 ga 30\r  ]\rend\r\rpu cs maison \rdr 45 re 80 ga 45\rpd\rrecule 200\ravance 200\rarbre 90\rgauche 20 arbre 85\rdroite 60 arbre 65', false);
-storage.save('Ex-Carres','repete 36 [\n\trepete 4 [\n\t\tavance 100\n\t\tgauche 90\n\t]\n\tgauche 10\n]',false);
 
 function loadLogo(val) {
   var $input = $('#storage').find('input');
@@ -200,7 +197,8 @@ function loadLogo(val) {
 }
 
 function saveLogo() {
-  storage.save($('#storage').find('input').val(), logoCode.getValue(), true).then(function () {
+  var name = $('#storage').find('input').val();
+  storage.save(name, logoCode.getValue(), true).then(function () {
     $('#consoleText').text('' + name + ' saved');
     setTimeout(function() {$('#consoleText').text('');}, 5000);
     refreshLogoList();
@@ -240,7 +238,11 @@ logo.turtle.show();
       }
     });
 
-    refreshLogoList();
+    storage.save('Ex-Spirale','to spiral :length\r  if :length > 10 [\r\tav :length\r\tgauche 90\r\tspiral :length - 5\r  ]\rend\r\rspiral 100', false);
+    storage.save('Ex-Arbre','to arbre :length\r  ifelse :length > 10 [\r\tgauche 40\r\tavance :length\r    arbre :length - 25\r    recule :length\r\tdroite 30\r\tavance :length\r    arbre :length - 15\r    recule :length\r    droite 60\r    avance :length\r    arbre :length - 15\r    recule :length\r    gauche 50\r  ] [\r    ga 30 av 5 dr 60 av 5 ga 60 re 5 dr 60 re 5 ga 30\r  ]\rend\r\rpu cs maison \rdr 45 re 80 ga 45\rpd\rrecule 200\ravance 200\rarbre 90\rgauche 20 arbre 85\rdroite 60 arbre 65', false);
+    storage.save('Ex-Carres','repete 36 [\n\trepete 4 [\n\t\tavance 100\n\t\tgauche 90\n\t]\n\tgauche 10\n]',false);
+
+    setTimeout(function() {refreshLogoList();},1000);
 
     $('#storage').find('input').val('Ex-Spiral');
     logoCode.setValue('to spiral :length\r  if :length > 10 [\r\tav :length\r\tgauche 90\r\tspiral :length - 5\r  ]\rend\r\rspiral 100');
